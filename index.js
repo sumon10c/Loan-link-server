@@ -27,19 +27,30 @@ async function run() {
     const db = client.db('loan-link-db');
     const loansCollection = db.collection('loans');
 
-    // --- API Error Fix Starts Here ---
+  
 
-    // 1. Shob loan pawar jonno (All Loans)
+    
     app.get('/loans', async (req, res) => {
       const cursor = loansCollection.find();
       const result = await cursor.toArray();
       res.send(result);
     });
+    
 
-    // 2. Jodi specific kono ID diye loan khujte chao (Specific Loan)
+  
+app.get('/loans/latest', async (req, res) => {
+  const result = await loansCollection
+      .find()
+      .sort({ _id: -1 }) 
+      .limit(6)          
+      .toArray();
+   res.send(result);
+});
+
+  
     app.get('/loans/:id', async (req, res) => {
       const id = req.params.id;
-      const query = { _id: new ObjectId(id) }; // Ekhon ObjectId kaaj korbe
+      const query = { _id: new ObjectId(id) }; 
       const result = await loansCollection.findOne(query);
       res.send(result);
     });
@@ -50,7 +61,7 @@ async function run() {
       res.send(result);
     });
 
-    // --- API Error Fix Ends Here ---
+ 
 
     // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -65,5 +76,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  console.log(`Example app listening on port ${port}`); 
 });
