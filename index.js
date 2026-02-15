@@ -9,7 +9,14 @@ const port = process.env.PORT || 3000;
 
 // middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',           
+    'https://loan-link-4d8e2.web.app',  
+    'https://loan-link-4d8e2.firebaseapp.com'
+  ],
+  credentials: true
+}));
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.uufcxef.mongodb.net/?appName=Cluster0`;
 
@@ -23,9 +30,10 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     const db = client.db('loan-link-db');
     const loansCollection = db.collection('loans');
+    const applicationCollection = db.collection('application');
 
   
 
@@ -55,9 +63,9 @@ app.get('/loans/latest', async (req, res) => {
       res.send(result);
     });
 
-    app.post('/loans', async (req, res) => {
-      const loans = req.body;
-      const result = await loansCollection.insertOne(loans);
+    app.post('/loansApplication', async (req, res) => {
+      const application = req.body;
+      const result = await applicationCollection.insertOne(application);
       res.send(result);
     });
 
