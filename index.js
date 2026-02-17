@@ -65,19 +65,20 @@ app.get('/loans/latest', async (req, res) => {
 
     app.post('/loansApplication', async (req, res) => {
       const application = req.body;
+      application.createdAt = new Date();
       const result = await applicationCollection.insertOne(application);
       res.send(result);
     });
 
     app.get('/loansApplication',async(req, res)=>{
       const query = {}
-      const email = req.query
+      const email = req.query.Email
       if(email){
-        quary.Email = email
+        query.Email = email
       }
 
 
-      const cursor = applicationCollection.find(quary);
+      const cursor = applicationCollection.find(query);
       const result = await cursor.toArray();
       res.send(result)
     })
