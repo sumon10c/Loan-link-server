@@ -69,6 +69,19 @@ app.get('/loans/latest', async (req, res) => {
       res.send(result);
     });
 
+    app.get('/loansApplication',async(req, res)=>{
+      const query = {}
+      const email = req.query
+      if(email){
+        quary.Email = email
+      }
+
+
+      const cursor = applicationCollection.find(quary);
+      const result = await cursor.toArray();
+      res.send(result)
+    })
+
  
 
     // await client.db("admin").command({ ping: 1 });
