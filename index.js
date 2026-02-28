@@ -30,10 +30,10 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // await client.connect();
-    const db = client.db('loan-link-db');
-    const loansCollection = db.collection('loans');
-    const applicationCollection = db.collection('application');
+    const db = client.db('loan-link-db'); 
+const loansCollection = db.collection('loans'); 
+const applicationCollection = db.collection('application');
+const usersCollection = db.collection("users"); 
 
   
 
@@ -72,16 +72,50 @@ app.get('/loans/latest', async (req, res) => {
 
     app.get('/loansApplication',async(req, res)=>{
       const query = {}
-      const email = req.query.Email
+      const email = req.query.email
       if(email){
         query.Email = email
       }
-
-
       const cursor = applicationCollection.find(query);
       const result = await cursor.toArray();
       res.send(result)
-    })
+    });
+
+    // ২. ইউজার সেভ বা আপডেট করার রুট (PUT Method)
+app.put('/users', async (req, res) => {
+  try {
+      const user = req.body;
+      // আমরা ইমেইল দিয়ে চেক করবো ইউজার অলরেডি আছে কি না
+      const query = { Email: user.Email }; 
+      
+      const options = { upsert: true }; // ইউজার না থাকলে নতুন তৈরি করবে
+      
+      const updateDoc = {
+          $set: {
+              name: user.name,
+              photo: user.photo,
+              lastLogin: new Date().toISOString() // শেষ কখন লগইন করেছে তা ট্র্যাক করবে
+          },
+          // নিচের অংশটি শুধুমাত্র নতুন ইউজারের ক্ষেত্রে সেভ হবে
+          $setOnInsert: {
+              role: 'User', // ডিফল্ট রোল 'User' হিসেবে থাকবে
+              createdAt: new Date().toISOString()
+          }
+      };
+
+      const result = await usersCollection.updateOne(query, updateDoc, options);
+      res.send(result);
+  } catch (error) {
+      console.error("Error saving user:", error);
+      res.status(500).send({ message: "Internal Server Error" });
+  }
+});
+
+// ৩. (অপশনাল) সব ইউজার দেখার জন্য গেট রুট (অ্যাডমিন প্যানেলের জন্য লাগবে)
+app.get('/users', async (req, res) => {
+  const result = await usersCollection.find().toArray();
+  res.send(result);
+});
 
  
 
