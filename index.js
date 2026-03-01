@@ -10,7 +10,7 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cors({
   origin: [
-    'http://localhost:5173',           
+    'http://localhost:5173',          
     'https://loan-link-4d8e2.web.app',  
     'https://loan-link-4d8e2.firebaseapp.com'
   ],
@@ -34,6 +34,7 @@ async function run() {
     const applicationCollection = db.collection('application');
     const usersCollection = db.collection("users"); 
 
+    // loan api
     app.get('/loans', async (req, res) => {
       const cursor = loansCollection.find();
       const result = await cursor.toArray();
@@ -56,38 +57,73 @@ async function run() {
       res.send(result);
     });
 
+    // loan application post
     app.post('/loansApplication', async (req, res) => {
       const application = req.body;
       application.createdAt = new Date();
+      application.status = "Pending"; 
       const result = await applicationCollection.insertOne(application);
       res.send(result);
     });
 
 
+// get loan application role based
+app.get('/loansApplication', async (req, res) => {
+  try {
+      const email = req.query.email; 
+      let query = {};
 
-    app.get('/loansApplication', async (req, res) => {
-      try {
-          const query = {};
-          const email = req.query.email;
-          
-          if (email) {
-              query.Email = email; 
-          }
-          
-          
-          const result = await applicationCollection
-              .find(query)
-              .sort({ _id: -1 }) 
-              .toArray();
-              
-          res.send(result);
-      } catch (error) {
-          console.error("Error fetching applications:", error);
-          res.status(500).send({ message: "Internal Server Error" });
+      if (email && email !== "admin@gmail.com") {
+          query = {
+            $or: [
+              { Email: email },
+              { email: email }
+            ]
+          };
       }
-  });
-   
 
+      const result = await applicationCollection
+          .find(query)
+          .sort({ _id: -1 }) 
+          .toArray();
+          
+      res.send(result);
+  } catch (error) {
+      console.error("Fetch Error:", error);
+      res.status(500).send({ message: "Internal Server Error" });
+  }
+});
+
+  // patch api for admin
+    app.patch('/loansApplication/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const { status } = req.body;
+        const query = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: { status: status }
+        };
+        const result = await applicationCollection.updateOne(query, updateDoc);
+        res.send(result);
+      } catch (error) {
+        console.error("Error updating status:", error);
+        res.status(500).send({ message: "Internal Server Error" });
+      }
+    });
+
+    
+    // check admin status
+    app.get('/users/admin/:email', async (req, res) => {
+      const email = req.params.email;
+      const user = await usersCollection.findOne({ Email: email });
+      let isAdmin = false;
+      if (user) {
+          isAdmin = user?.role === 'Admin';
+      }
+      res.send({ admin: isAdmin });
+    });
+
+  //  user api
     app.put('/users', async (req, res) => {
       try {
           const user = req.body;
@@ -101,7 +137,7 @@ async function run() {
                   lastLogin: new Date().toISOString()
               },
               $setOnInsert: {
-                  role: 'User',
+                  role: 'User', 
                   createdAt: new Date().toISOString()
               }
           };
@@ -109,7 +145,6 @@ async function run() {
           const result = await usersCollection.updateOne(query, updateDoc, options);
           res.send(result);
       } catch (error) {
-          console.error("Error saving user:", error);
           res.status(500).send({ message: "Internal Server Error" });
       }
     });
@@ -119,7 +154,7 @@ async function run() {
       res.send(result);
     });
 
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    console.log("MongoDB Connected Successfully!");
   } catch (error) {
     console.error("Database error:", error);
   }
@@ -127,9 +162,9 @@ async function run() {
 run().catch(console.dir);
 
 app.get('/', (req, res) => {
-  res.send('Loanlink is running');
+  res.send('Loanlink Server is running');
 });
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`); 
+  console.log(`Server listening on port ${port}`);
 });
