@@ -123,6 +123,29 @@ app.get('/loansApplication', async (req, res) => {
       res.send({ admin: isAdmin });
     });
 
+    
+    // delete application api
+    app.delete('/loansApplication/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        
+      
+        const result = await applicationCollection.deleteOne(query);
+        
+        if (result.deletedCount > 0) {
+          res.send(result);
+        } else {
+          res.status(404).send({ message: "Application not found" });
+        }
+      } catch (error) {
+        console.error("Delete Error:", error);
+        res.status(500).send({ message: "Internal Server Error" });
+      }
+    });
+
+
+
   //  user api
     app.put('/users', async (req, res) => {
       try {
