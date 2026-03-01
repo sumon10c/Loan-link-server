@@ -1,8 +1,7 @@
-
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb'); // <--- 1. ObjectId ekhane add koro
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -31,31 +30,25 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const db = client.db('loan-link-db'); 
-const loansCollection = db.collection('loans'); 
-const applicationCollection = db.collection('application');
-const usersCollection = db.collection("users"); 
+    const loansCollection = db.collection('loans'); 
+    const applicationCollection = db.collection('application');
+    const usersCollection = db.collection("users"); 
 
-  
-
-    
     app.get('/loans', async (req, res) => {
       const cursor = loansCollection.find();
       const result = await cursor.toArray();
       res.send(result);
     });
-    
 
-  
-app.get('/loans/latest', async (req, res) => {
-  const result = await loansCollection
-      .find()
-      .sort({ _id: -1 }) 
-      .limit(6)          
-      .toArray();
-   res.send(result);
-});
+    app.get('/loans/latest', async (req, res) => {
+      const result = await loansCollection
+          .find()
+          .sort({ _id: -1 }) 
+          .limit(6)           
+          .toArray();
+       res.send(result);
+    });
 
-  
     app.get('/loans/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }; 
@@ -70,56 +63,53 @@ app.get('/loans/latest', async (req, res) => {
       res.send(result);
     });
 
-    app.get('/loansApplication',async(req, res)=>{
-      const query = {}
-      const email = req.query.email
-      if(email){
-        query.Email = email
+
+    app.get('/loansApplication', async (req, res) => {
+      const query = {};
+      const email = req.query.email;
+      
+      if (email) {
+       
+        query.Email = email; 
       }
+      
       const cursor = applicationCollection.find(query);
       const result = await cursor.toArray();
-      res.send(result)
+      res.send(result);
+    });
+   
+
+    app.put('/users', async (req, res) => {
+      try {
+          const user = req.body;
+          const query = { Email: user.Email }; 
+          const options = { upsert: true };
+          
+          const updateDoc = {
+              $set: {
+                  name: user.name,
+                  photo: user.photo,
+                  lastLogin: new Date().toISOString()
+              },
+              $setOnInsert: {
+                  role: 'User',
+                  createdAt: new Date().toISOString()
+              }
+          };
+
+          const result = await usersCollection.updateOne(query, updateDoc, options);
+          res.send(result);
+      } catch (error) {
+          console.error("Error saving user:", error);
+          res.status(500).send({ message: "Internal Server Error" });
+      }
     });
 
-    // ২. ইউজার সেভ বা আপডেট করার রুট (PUT Method)
-app.put('/users', async (req, res) => {
-  try {
-      const user = req.body;
-      // আমরা ইমেইল দিয়ে চেক করবো ইউজার অলরেডি আছে কি না
-      const query = { Email: user.Email }; 
-      
-      const options = { upsert: true }; // ইউজার না থাকলে নতুন তৈরি করবে
-      
-      const updateDoc = {
-          $set: {
-              name: user.name,
-              photo: user.photo,
-              lastLogin: new Date().toISOString() // শেষ কখন লগইন করেছে তা ট্র্যাক করবে
-          },
-          // নিচের অংশটি শুধুমাত্র নতুন ইউজারের ক্ষেত্রে সেভ হবে
-          $setOnInsert: {
-              role: 'User', // ডিফল্ট রোল 'User' হিসেবে থাকবে
-              createdAt: new Date().toISOString()
-          }
-      };
-
-      const result = await usersCollection.updateOne(query, updateDoc, options);
+    app.get('/users', async (req, res) => {
+      const result = await usersCollection.find().toArray();
       res.send(result);
-  } catch (error) {
-      console.error("Error saving user:", error);
-      res.status(500).send({ message: "Internal Server Error" });
-  }
-});
+    });
 
-// ৩. (অপশনাল) সব ইউজার দেখার জন্য গেট রুট (অ্যাডমিন প্যানেলের জন্য লাগবে)
-app.get('/users', async (req, res) => {
-  const result = await usersCollection.find().toArray();
-  res.send(result);
-});
-
- 
-
-    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } catch (error) {
     console.error("Database error:", error);
