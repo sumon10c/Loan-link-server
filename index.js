@@ -64,19 +64,28 @@ async function run() {
     });
 
 
+
     app.get('/loansApplication', async (req, res) => {
-      const query = {};
-      const email = req.query.email;
-      
-      if (email) {
-       
-        query.Email = email; 
+      try {
+          const query = {};
+          const email = req.query.email;
+          
+          if (email) {
+              query.Email = email; 
+          }
+          
+          
+          const result = await applicationCollection
+              .find(query)
+              .sort({ _id: -1 }) 
+              .toArray();
+              
+          res.send(result);
+      } catch (error) {
+          console.error("Error fetching applications:", error);
+          res.status(500).send({ message: "Internal Server Error" });
       }
-      
-      const cursor = applicationCollection.find(query);
-      const result = await cursor.toArray();
-      res.send(result);
-    });
+  });
    
 
     app.put('/users', async (req, res) => {
